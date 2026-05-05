@@ -17,6 +17,12 @@ Vagrant.configure("2") do |config|
     v.memory = 8192 # memory in MB
   end
 
+config.vm.provider "parallels" do |v, override|
+    v.cpus = 12
+    v.memory = 8192
+    override.vm.box = "bento/ubuntu-22.04"
+  end
+
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
