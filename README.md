@@ -35,5 +35,7 @@ $env:OCTOPUS_TEMPK8S_POLLING_HOSTNAME="polling.mattc.octopus.app"
 $env:OCTOPUS_TEMPK8S_SPACE="Scratchpad"
 $env:OCTOPUS_TEMPK8S_SPACE_ID="Spaces-###"
 $env:OCTOPUS_TEMPK8S_BEARER_TOKEN="token"
-vagrant up vagrant up --provider=hyperv
+vagrant up --provider=hyperv
 ```
+
+If you have more than one Virtual Switch, you will be prompted for which one to use when vagrant starts.

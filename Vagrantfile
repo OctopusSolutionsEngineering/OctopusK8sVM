@@ -23,8 +23,19 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "bento/ubuntu-22.04"
-  config.vm.box_version = "202510.26.0"
+  
+  # Parallesl and Libvirt
+  #config.vm.box = "bento/ubuntu-22.04"
+  #config.vm.box_version = "202510.26.0"
+  
+  # Libvirt and Hyper-V
+  #config.vm.box = "boxen/ubuntu-22.04"
+  #config.vm.box_version = "2025.08.20.12"
+
+  # Libvert, Hyper-V and Parallels
+  config.vm.box = "generic/ubuntu2204"
+
+  #config.vm.disk :disk, size: "50GB", primary: true
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -83,6 +94,12 @@ Vagrant.configure("2") do |config|
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", env: {"OCTOPUS_TEMPK8S_GRPC_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_GRPC_HOSTNAME'], "OCTOPUS_TEMPK8S_POLLING_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_POLLING_HOSTNAME'], "OCTOPUS_TEMPK8S_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_HOSTNAME'], "OCTOPUS_TEMPK8S_SPACE" => ENV['OCTOPUS_TEMPK8S_SPACE'], "OCTOPUS_TEMPK8S_BEARER_TOKEN" => ENV['OCTOPUS_TEMPK8S_BEARER_TOKEN'], "OCTOPUS_TEMPK8S_SPACE_ID" => ENV['OCTOPUS_TEMPK8S_SPACE_ID']}, inline: <<-SHELL
+    sgdisk --move-second-header /dev/sda
+    growpart /dev/sda 3
+    pvresize /dev/sda3
+    lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+    resize2fs /dev/ubuntu-vg/ubuntu-lv
+
     apt-get update
     apt-get install -y docker.io golang-go
 
