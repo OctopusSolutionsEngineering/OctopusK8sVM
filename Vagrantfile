@@ -311,7 +311,7 @@ EOF
 
     for i in {1..5}; do
         argocd app sync argocd/octopub-manifest-production && break
-       sleep 30
+        sleep 30
     done
 
     exit 0
