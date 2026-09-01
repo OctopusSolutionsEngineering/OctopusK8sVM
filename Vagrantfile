@@ -271,6 +271,7 @@ EOF
 
     for i in {1..5}; do
         argocd app create octopub \
+            --upsert \
             --repo https://mockgit.octopusdemos.com/repo/argocd \
             --path octopub \
             --dest-server https://kubernetes.default.svc \
@@ -280,12 +281,14 @@ EOF
     done
 
     for i in {1..5}; do
+        echo "Syncing Argo CD application argocd/octopub (attempt $i)..."
         argocd app sync argocd/octopub && break
        sleep 30
    done
 
     for i in {1..5}; do
         argocd app create octopub-manifest \
+            --upsert \
             --repo https://mockgit.octopusdemos.com/repo/argocd \
             --path octopub-manifest \
             --dest-server https://kubernetes.default.svc \
@@ -295,21 +298,25 @@ EOF
     done
 
     for i in {1..5}; do
+        echo "Syncing Argo CD application argocd/octopub-manifest (attempt $i)..."
         argocd app sync argocd/octopub-manifest && break
         sleep 30
     done
 
     for i in {1..5}; do
+        echo "Syncing Argo CD application argocd/octopub-manifest-development (attempt $i)..."
         argocd app sync argocd/octopub-manifest-development && break
         sleep 30
     done
 
     for i in {1..5}; do
+        echo "Syncing Argo CD application argocd/octopub-manifest-test (attempt $i)..."
         argocd app sync argocd/octopub-manifest-test && break
         sleep 30
     done
 
     for i in {1..5}; do
+        echo "Syncing Argo CD application argocd/octopub-manifest-production (attempt $i)..."
         argocd app sync argocd/octopub-manifest-production && break
         sleep 30
     done
