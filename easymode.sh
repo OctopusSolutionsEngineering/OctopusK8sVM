@@ -1,9 +1,0 @@
-#!/bin/bash
-
-OCTOPUS_TEMPK8S_GRPC_HOSTNAME=mattc.octopus.app:8443 \
-OCTOPUS_TEMPK8S_HOSTNAME=mattc.octopus.app \
-OCTOPUS_TEMPK8S_POLLING_HOSTNAME=polling.mattc.octopus.app \
-OCTOPUS_TEMPK8S_SPACE="Easy Mode" \
-OCTOPUS_TEMPK8S_SPACE_ID=Spaces-4588 \
-OCTOPUS_TEMPK8S_BEARER_TOKEN=$1 \
-vagrant up
