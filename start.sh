@@ -4,6 +4,12 @@ BEARER_TOKEN=$1
 SPACE_NAME=${2:-Scratchpad}
 OCTOPUS_HOSTNAME=${3:-mattc.octopus.app}
 
+if [ -z "$BEARER_TOKEN" ]; then
+  echo "Error: No bearer token supplied"
+  echo "Usage: $0 <bearer-token> [space-name] [hostname]"
+  exit 1
+fi
+
 # Get space ID from Octopus API using the space name
 SPACE_ID=$(curl -s -G -H "Authorization: Bearer ${BEARER_TOKEN}" \
   --data-urlencode "partialName=${SPACE_NAME}" \
