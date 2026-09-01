@@ -265,15 +265,19 @@ EOF
 
     GIT_USER=$(uuidgen)
 
-    argocd repo add https://mockgit.octopusdemos.com/repo/argocd --username "${GIT_USER}" --password "blahblah"
+    for i in {1..5}; do
+        argocd repo add https://mockgit.octopusdemos.com/repo/argocd --upsert --username "${GIT_USER}" --password "blahblah" && break
+        echo "Attempt $i failed. Retrying in 30 seconds..."
+        sleep 30
+    done
 
     for i in {1..5}; do
-    argocd app create octopub \
-        --repo https://mockgit.octopusdemos.com/repo/argocd \
-        --path octopub \
-        --dest-server https://kubernetes.default.svc \
-        --dest-namespace octopub && break
-        echo "Attempt $i failed. Retrying in 30 seconds..."
+        argocd app create octopub \
+            --repo https://mockgit.octopusdemos.com/repo/argocd \
+            --path octopub \
+            --dest-server https://kubernetes.default.svc \
+            --dest-namespace octopub && break
+            echo "Attempt $i failed. Retrying in 30 seconds..."
         sleep 30
     done
 
@@ -296,8 +300,6 @@ EOF
         argocd app sync argocd/octopub-manifest && break
         sleep 30
     done
-
-    sleep 30
 
     for i in {1..5}; do
         argocd app sync argocd/octopub-manifest-development && break
