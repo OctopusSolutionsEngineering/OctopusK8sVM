@@ -99,7 +99,7 @@ config.vm.provider "parallels" do |v, override|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  config.vm.provision "shell", env: {"OCTOPUS_TEMPK8S_GRPC_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_GRPC_HOSTNAME'], "OCTOPUS_TEMPK8S_POLLING_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_POLLING_HOSTNAME'], "OCTOPUS_TEMPK8S_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_HOSTNAME'], "OCTOPUS_TEMPK8S_SPACE" => ENV['OCTOPUS_TEMPK8S_SPACE'], "OCTOPUS_TEMPK8S_BEARER_TOKEN" => ENV['OCTOPUS_TEMPK8S_BEARER_TOKEN'], "OCTOPUS_TEMPK8S_SPACE_ID" => ENV['OCTOPUS_TEMPK8S_SPACE_ID']}, inline: <<-SHELL
+  config.vm.provision "shell", env: {"OCTOPUS_TEMPK8S_GRPC_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_GRPC_HOSTNAME'], "OCTOPUS_TEMPK8S_POLLING_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_POLLING_HOSTNAME'], "OCTOPUS_TEMPK8S_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_HOSTNAME'], "OCTOPUS_TEMPK8S_SPACE" => ENV['OCTOPUS_TEMPK8S_SPACE'], "OCTOPUS_TEMPK8S_BEARER_TOKEN" => ENV['OCTOPUS_TEMPK8S_BEARER_TOKEN'], "OCTOPUS_TEMPK8S_SPACE_ID" => ENV['OCTOPUS_TEMPK8S_SPACE_ID'], "MOCK_GIT_USER" => ENV['MOCK_GIT_USER'].to_s, "MOCK_GIT_PASS" => ENV['MOCK_GIT_PASS'].to_s}, inline: <<-SHELL
     sgdisk --move-second-header /dev/sda
     growpart /dev/sda 3
     pvresize /dev/sda3
@@ -261,10 +261,11 @@ EOF
     kindargocd \
     oci://registry-1.docker.io/octopusdeploy/octopus-argocd-gateway-chart
 
-    GIT_USER=$(uuidgen)
+    GIT_USER=${MOCK_GIT_USER:-$(uuidgen)}
+    GIT_PASS=${MOCK_GIT_PASS:-$(uuidgen)}
 
     for i in {1..5}; do
-        argocd repo add https://mockgit.octopusdemos.com/repo/argocd --upsert --username "${GIT_USER}" --password "blahblah" && break
+        argocd repo add https://mockgit.octopusdemos.com/repo/argocd --upsert --username "${GIT_USER}" --password "${GIT_PASS}" && break
         echo "Attempt $i failed. Retrying in 30 seconds..."
         sleep 30
     done

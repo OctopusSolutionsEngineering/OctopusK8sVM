@@ -26,6 +26,14 @@ OCTOPUS_TEMPK8S_BEARER_TOKEN=token \
 vagrant up
 ```
 
+The credentials used to add the Mock Git Repo to Argo CD default to random GUIDs. Set `MOCK_GIT_USER` and `MOCK_GIT_PASS` to use specific values:
+
+```bash
+MOCK_GIT_USER=myuser \
+MOCK_GIT_PASS=mypassword \
+vagrant up
+```
+
 This must be run as Administrator in Windows:
 
 ```powershell
