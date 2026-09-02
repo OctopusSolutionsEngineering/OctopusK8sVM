@@ -99,7 +99,28 @@ config.vm.provider "parallels" do |v, override|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  config.vm.provision "shell", env: {"OCTOPUS_TEMPK8S_GRPC_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_GRPC_HOSTNAME'], "OCTOPUS_TEMPK8S_POLLING_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_POLLING_HOSTNAME'], "OCTOPUS_TEMPK8S_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_HOSTNAME'], "OCTOPUS_TEMPK8S_SPACE" => ENV['OCTOPUS_TEMPK8S_SPACE'], "OCTOPUS_TEMPK8S_BEARER_TOKEN" => ENV['OCTOPUS_TEMPK8S_BEARER_TOKEN'], "OCTOPUS_TEMPK8S_SPACE_ID" => ENV['OCTOPUS_TEMPK8S_SPACE_ID'], "MOCK_GIT_USER" => ENV['MOCK_GIT_USER'].to_s, "MOCK_GIT_PASS" => ENV['MOCK_GIT_PASS'].to_s}, inline: <<-SHELL
+  config.vm.provision "shell", env: {"OCTOPUS_TEMPK8S_GRPC_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_GRPC_HOSTNAME'].to_s, "OCTOPUS_TEMPK8S_POLLING_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_POLLING_HOSTNAME'].to_s, "OCTOPUS_TEMPK8S_HOSTNAME" => ENV['OCTOPUS_TEMPK8S_HOSTNAME'].to_s, "OCTOPUS_TEMPK8S_SPACE" => ENV['OCTOPUS_TEMPK8S_SPACE'].to_s, "OCTOPUS_TEMPK8S_BEARER_TOKEN" => ENV['OCTOPUS_TEMPK8S_BEARER_TOKEN'].to_s, "OCTOPUS_TEMPK8S_SPACE_ID" => ENV['OCTOPUS_TEMPK8S_SPACE_ID'].to_s, "MOCK_GIT_USER" => ENV['MOCK_GIT_USER'].to_s, "MOCK_GIT_PASS" => ENV['MOCK_GIT_PASS'].to_s}, inline: <<-SHELL
+    # The Octopus Helm charts are optional. Each one is only applied when every
+    # environment variable it needs has been supplied.
+    check_octopus_env() {
+      CHART_NAME=$1
+      shift
+
+      MISSING=""
+      for VAR_NAME in "$@"; do
+        if [ -z "${!VAR_NAME}" ]; then
+          MISSING="${MISSING} ${VAR_NAME}"
+        fi
+      done
+
+      if [ -n "${MISSING}" ]; then
+        echo "WARNING: Not applying the ${CHART_NAME} Helm chart. Missing environment variables:${MISSING}"
+        return 1
+      fi
+
+      return 0
+    }
+
     sgdisk --move-second-header /dev/sda
     growpart /dev/sda 3
     pvresize /dev/sda3
@@ -166,28 +187,30 @@ EOF1
     csi-driver-nfs \
     csi-driver-nfs
 
-    helm upgrade --install --rollback-on-failure \
-    --timeout 20m0s \
-    --wait \
-    --create-namespace --namespace octopus-agent-kind \
-    --version "2.*.*" \
-    --set agent.acceptEula="Y" \
-    --set agent.space="$OCTOPUS_TEMPK8S_SPACE" \
-    --set agent.serverUrl="https://$OCTOPUS_TEMPK8S_HOSTNAME" \
-    --set agent.serverCommsAddresses="{https://$OCTOPUS_TEMPK8S_POLLING_HOSTNAME/}" \
-    --set agent.bearerToken="${OCTOPUS_TEMPK8S_BEARER_TOKEN}" \
-    --set agent.name="Kind" \
-    --set agent.deploymentTarget.initial.environments="{development,test,production}" \
-    --set agent.deploymentTarget.initial.tags="{Kubernetes}" \
-    --set agent.deploymentTarget.enabled="true" \
-    --set kubernetesMonitor.enabled="true" \
-    --set kubernetesMonitor.registration.serverApiUrl="https://$OCTOPUS_TEMPK8S_HOSTNAME/" \
-    --set kubernetesMonitor.monitor.serverGrpcUrl="grpc://$OCTOPUS_TEMPK8S_GRPC_HOSTNAME" \
-    --set kubernetesMonitor.registration.serverAccessToken="${OCTOPUS_TEMPK8S_BEARER_TOKEN}" \
-    --set kubernetesMonitor.registration.spaceId="${OCTOPUS_TEMPK8S_SPACE_ID}" \
-    --set kubernetesMonitor.registration.machineName="Kind" \
-    kindk8sagent \
-    oci://registry-1.docker.io/octopusdeploy/kubernetes-agent
+    if check_octopus_env "Octopus Kubernetes agent" OCTOPUS_TEMPK8S_SPACE OCTOPUS_TEMPK8S_HOSTNAME OCTOPUS_TEMPK8S_POLLING_HOSTNAME OCTOPUS_TEMPK8S_BEARER_TOKEN OCTOPUS_TEMPK8S_GRPC_HOSTNAME OCTOPUS_TEMPK8S_SPACE_ID; then
+      helm upgrade --install --rollback-on-failure \
+      --timeout 20m0s \
+      --wait \
+      --create-namespace --namespace octopus-agent-kind \
+      --version "2.*.*" \
+      --set agent.acceptEula="Y" \
+      --set agent.space="$OCTOPUS_TEMPK8S_SPACE" \
+      --set agent.serverUrl="https://$OCTOPUS_TEMPK8S_HOSTNAME" \
+      --set agent.serverCommsAddresses="{https://$OCTOPUS_TEMPK8S_POLLING_HOSTNAME/}" \
+      --set agent.bearerToken="${OCTOPUS_TEMPK8S_BEARER_TOKEN}" \
+      --set agent.name="Kind" \
+      --set agent.deploymentTarget.initial.environments="{development,test,production}" \
+      --set agent.deploymentTarget.initial.tags="{Kubernetes}" \
+      --set agent.deploymentTarget.enabled="true" \
+      --set kubernetesMonitor.enabled="true" \
+      --set kubernetesMonitor.registration.serverApiUrl="https://$OCTOPUS_TEMPK8S_HOSTNAME/" \
+      --set kubernetesMonitor.monitor.serverGrpcUrl="grpc://$OCTOPUS_TEMPK8S_GRPC_HOSTNAME" \
+      --set kubernetesMonitor.registration.serverAccessToken="${OCTOPUS_TEMPK8S_BEARER_TOKEN}" \
+      --set kubernetesMonitor.registration.spaceId="${OCTOPUS_TEMPK8S_SPACE_ID}" \
+      --set kubernetesMonitor.registration.machineName="Kind" \
+      kindk8sagent \
+      oci://registry-1.docker.io/octopusdeploy/kubernetes-agent
+    fi
 
     # Install Argo CD
 
@@ -244,22 +267,24 @@ EOF
 
     kubectl apply -f argocdpolicies.yml
 
-    TOKEN=$(argocd account generate-token --account octopus)
+    if check_octopus_env "Octopus Argo CD gateway" OCTOPUS_TEMPK8S_HOSTNAME OCTOPUS_TEMPK8S_BEARER_TOKEN OCTOPUS_TEMPK8S_SPACE_ID; then
+      TOKEN=$(argocd account generate-token --account octopus)
 
-    helm upgrade --install --rollback-on-failure \
-    --create-namespace --namespace octo-argo-gateway-kind \
-    --version "*.*" \
-    --set registration.octopus.name="Kind" \
-    --set registration.octopus.serverApiUrl="https://${OCTOPUS_TEMPK8S_HOSTNAME}" \
-    --set registration.octopus.serverAccessToken="${OCTOPUS_TEMPK8S_BEARER_TOKEN}" \
-    --set registration.octopus.spaceId="${OCTOPUS_TEMPK8S_SPACE_ID}" \
-    --set gateway.octopus.serverGrpcUrl="grpc://${OCTOPUS_TEMPK8S_HOSTNAME}:8443" \
-    --set gateway.argocd.serverGrpcUrl="grpc://argocd-server.argocd.svc.cluster.local" \
-    --set gateway.argocd.insecure="true" \
-    --set gateway.argocd.plaintext="false" \
-    --set gateway.argocd.authenticationToken="${TOKEN}" \
-    kindargocd \
-    oci://registry-1.docker.io/octopusdeploy/octopus-argocd-gateway-chart
+      helm upgrade --install --rollback-on-failure \
+      --create-namespace --namespace octo-argo-gateway-kind \
+      --version "*.*" \
+      --set registration.octopus.name="Kind" \
+      --set registration.octopus.serverApiUrl="https://${OCTOPUS_TEMPK8S_HOSTNAME}" \
+      --set registration.octopus.serverAccessToken="${OCTOPUS_TEMPK8S_BEARER_TOKEN}" \
+      --set registration.octopus.spaceId="${OCTOPUS_TEMPK8S_SPACE_ID}" \
+      --set gateway.octopus.serverGrpcUrl="grpc://${OCTOPUS_TEMPK8S_HOSTNAME}:8443" \
+      --set gateway.argocd.serverGrpcUrl="grpc://argocd-server.argocd.svc.cluster.local" \
+      --set gateway.argocd.insecure="true" \
+      --set gateway.argocd.plaintext="false" \
+      --set gateway.argocd.authenticationToken="${TOKEN}" \
+      kindargocd \
+      oci://registry-1.docker.io/octopusdeploy/octopus-argocd-gateway-chart
+    fi
 
     GIT_USER=${MOCK_GIT_USER:-$(uuidgen)}
     GIT_PASS=${MOCK_GIT_PASS:-$(uuidgen)}

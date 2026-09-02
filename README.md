@@ -26,6 +26,12 @@ OCTOPUS_TEMPK8S_BEARER_TOKEN=token \
 vagrant up
 ```
 
+The Octopus Helm charts are optional. If the environment variables that the Octopus Kubernetes agent or the Octopus Argo CD gateway need are not set, a warning is logged, that chart is not applied, and the rest of the environment (Kubernetes, Argo CD, and the sample applications) is still installed:
+
+```bash
+vagrant up
+```
+
 The credentials used to add the Mock Git Repo to Argo CD default to random GUIDs. Set `MOCK_GIT_USER` and `MOCK_GIT_PASS` to use specific values:
 
 ```bash
