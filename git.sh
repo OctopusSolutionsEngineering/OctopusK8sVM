@@ -25,7 +25,7 @@ if [ $# -ge 2 ] && [ -n "$2" ]; then
   GIT_PASS=$2
 else
   GIT_PASS=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)
-  echo "No password supplied, using the generated password ${GIT_PASS}"
+  echo "No password supplied, using a random password"
 fi
 
 if ! vagrant status --machine-readable | grep -q ",state,running"; then
