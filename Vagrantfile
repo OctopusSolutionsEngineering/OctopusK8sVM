@@ -227,7 +227,45 @@ EOF1
     # Wait for the pods to be ready before proceeding
     kubectl wait --for=condition=Ready pods --all -n argocd --timeout=300s
 
-    kubectl port-forward svc/argocd-server -n argocd 8080:443 >/dev/null 2>&1 &
+    # The argocd CLI talks to the Argo CD server over a port forward. Run it as
+    # a systemd service so it is restarted if it drops and comes back after a
+    # reboot.
+    cat <<EOF2 > /etc/systemd/system/argocd-port-forward.service
+[Unit]
+Description=Port forward for the Argo CD server
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=KUBECONFIG=/root/.kube/config
+ExecStart=/usr/local/bin/kubectl port-forward svc/argocd-server -n argocd 8080:443
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF2
+
+    # Reload systemd to pick up the new file
+    sudo systemctl daemon-reload
+
+    # Enable the service to run on boot
+    sudo systemctl enable argocd-port-forward
+
+    # Start it now
+    sudo systemctl start argocd-port-forward
+
+    # Check status
+    sudo systemctl status argocd-port-forward
+
+    # The service is restarted until the Argo CD server accepts connections, so
+    # wait for the port forward to come up before using the argocd CLI
+    for i in {1..30}; do
+        timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' 2>/dev/null && break
+        echo "Waiting for the Argo CD port forward (attempt $i)..."
+        sleep 5
+    done
 
     PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 

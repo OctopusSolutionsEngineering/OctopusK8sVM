@@ -82,15 +82,6 @@ echo "Uninstalling Helm release ${HELM_RELEASE} from namespace ${HELM_NAMESPACE}
 helm uninstall "${HELM_RELEASE}" --namespace "${HELM_NAMESPACE}" --wait ||
   echo "Helm release ${HELM_RELEASE} was not installed, continuing"
 
-# The argocd CLI talks to the Argo CD server over a port forward. Provisioning
-# starts one, but it does not survive a reboot, so start one if needed.
-if ! timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' 2>/dev/null; then
-  kubectl port-forward svc/argocd-server -n argocd 8080:443 >/dev/null 2>&1 &
-  PORT_FORWARD_PID=$!
-  trap 'kill "${PORT_FORWARD_PID}" 2>/dev/null' EXIT
-  sleep 5
-fi
-
 PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 
 if [ -z "$PASSWORD" ]; then

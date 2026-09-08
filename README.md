@@ -53,3 +53,9 @@ vagrant up --provider=hyperv
 ```
 
 If you have more than one Virtual Switch, you will be prompted for which one to use when vagrant starts.
+
+The Mock Git Repo credentials can also be changed on a running VM. The password is optional and defaults to a random GUID:
+
+```bash
+./git.sh myuser mypassword
+```

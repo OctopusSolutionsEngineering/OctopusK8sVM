@@ -36,13 +36,7 @@ echo "The certificate is self signed, so the browser will warn about it."
 echo "Press Ctrl+C to stop the port forward."
 echo
 
-# The Vagrantfile starts a "kubectl port-forward" on guest port 8080 during
-# provisioning, but it does not survive a reboot. Only start a new one if
-# nothing is listening on that port already.
-if vagrant ssh -c "timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/${GUEST_PORT}'" >/dev/null 2>&1; then
-  exec vagrant ssh -- -N -L "${HOST_PORT}:localhost:${GUEST_PORT}"
-else
-  exec vagrant ssh \
-    -c "sudo kubectl port-forward svc/argocd-server -n argocd ${GUEST_PORT}:443" \
-    -- -L "${HOST_PORT}:localhost:${GUEST_PORT}"
-fi
+# The argocd-port-forward systemd service in the VM keeps a "kubectl
+# port-forward" running on guest port 8080, so this only has to tunnel the
+# guest port to the host.
+exec vagrant ssh -- -N -L "${HOST_PORT}:localhost:${GUEST_PORT}"
